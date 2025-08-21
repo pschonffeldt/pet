@@ -5,7 +5,7 @@ import PetList from "@/components/pet-list";
 import SearchForm from "@/components/search-form";
 import Stats from "@/components/stats";
 
-export default async function Dashboard() {
+export default async function Page() {
   const response = await fetch(
     "https://bytegrad.com/course-assets/projects/petsoft/api/pets"
   );
