@@ -7,9 +7,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <>
       <BackgroundPattern />
 
-      <AppHeader />
-      {children}
-      <AppFooter />
+      <div className="max-w-[1050px] mx-auto px-4 ">
+        <AppHeader />
+        {children}
+        <AppFooter />
+      </div>
     </>
   );
 }
