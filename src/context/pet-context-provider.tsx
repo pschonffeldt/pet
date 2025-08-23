@@ -32,10 +32,18 @@ export default function PetContextProvider({
   const numberOfPets = pets.length;
 
   // event handlers / actions
+
+  // Add a new bet by spreading the existing and adding a new one o the array
+  const handleAddPet = (newPet: Pet) => {
+    setPets((prev) => [...prev, newPet]);
+  };
+  // Removes a pet from the state by filtering out the one with the given `id`.
+  // `setPets` updates the pets array, keeping only those whose `id` does not match.
   const handleCheckoutPet = (id: string) => {
     setPets((prev) => prev.filter((pet) => pet.id !== id));
     setSelectedPetId(null);
   };
+  // Sets the currently selected pet's id in state, so other components can know which pet is active
   const handleChangeSelectedPetId = (id: string) => {
     setSelectedPetId(id);
   };
