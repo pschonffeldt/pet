@@ -1,5 +1,18 @@
 import { PlusIcon } from "lucide-react";
 import { Button } from "./ui/button";
+import {
+  Dialog,
+  DialogPortal,
+  DialogOverlay,
+  DialogTrigger,
+  DialogClose,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from "./ui/dialog";
+import PetForm from "./pet-form";
 
 type PetButtonProps = {
   actionType: "add" | "edit" | "checkout";
@@ -12,18 +25,7 @@ export default function PetButton({
   onClick,
   children,
 }: PetButtonProps) {
-  if (actionType === "add") {
-    return (
-      <Button size="icon">
-        <PlusIcon className="h-6 w-6" />
-      </Button>
-    );
-  }
-
-  if (actionType === "edit") {
-    return <Button variant="secondary">{children}</Button>;
-  }
-
+  // Check if we are clicking the checkout button
   if (actionType === "checkout") {
     return (
       <Button variant="secondary" onClick={onClick}>
@@ -31,4 +33,29 @@ export default function PetButton({
       </Button>
     );
   }
+  // Otherwise we run this
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        {/* And we check which button (from the other 2) are we clickign */}
+        {actionType === "add" ? (
+          <Button size="icon">
+            <PlusIcon className="h-6 w-6" />
+          </Button>
+        ) : (
+          <Button variant="secondary">{children}</Button>
+        )}
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            {/* Depending on the button we change the form title */}
+            {actionType === "add" ? "Add a new Pet" : "Edit pet"}
+          </DialogTitle>
+        </DialogHeader>
+
+        <PetForm></PetForm>
+      </DialogContent>
+    </Dialog>
+  );
 }
