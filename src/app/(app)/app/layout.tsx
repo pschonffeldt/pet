@@ -10,6 +10,7 @@ export default async function Layout({
 }: {
   children: React.ReactNode;
 }) {
+  // Fetch data from prisma
   const pets = await prisma.pet.findMany();
 
   return (
