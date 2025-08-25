@@ -19,7 +19,13 @@ export default function PetForm({
   const { selectedPet } = usePetContext();
 
   return (
-    <form action={addPet} className="flex flex-col">
+    <form
+      action={async (FormData) => {
+        await addPet(FormData);
+        onFormSubmission();
+      }}
+      className="flex flex-col"
+    >
       <div className="space-y-3">
         <div className="space-y-1">
           <Label htmlFor="name">Name</Label>
