@@ -1,3 +1,5 @@
+"use client";
+
 import { PlusIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import {
@@ -13,6 +15,7 @@ import {
   DialogDescription,
 } from "./ui/dialog";
 import PetForm from "./pet-form";
+import { useState } from "react";
 
 type PetButtonProps = {
   actionType: "add" | "edit" | "checkout";
@@ -25,6 +28,7 @@ export default function PetButton({
   onClick,
   children,
 }: PetButtonProps) {
+  const [isFormOpen, setIsFormOpen] = useState(false);
   // Check if we are clicking the checkout button
   if (actionType === "checkout") {
     return (
@@ -35,7 +39,7 @@ export default function PetButton({
   }
   // Otherwise we run this
   return (
-    <Dialog>
+    <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
       <DialogTrigger asChild>
         {/* And we check which button (from the other 2) are we clickign */}
         {actionType === "add" ? (
@@ -54,7 +58,10 @@ export default function PetButton({
           </DialogTitle>
         </DialogHeader>
 
-        <PetForm actionType={actionType}></PetForm>
+        <PetForm
+          actionType={actionType}
+          onFormSubmission={() => setIsFormOpen(false)}
+        ></PetForm>
       </DialogContent>
     </Dialog>
   );

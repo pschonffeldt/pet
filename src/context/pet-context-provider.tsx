@@ -13,6 +13,7 @@ type TPetContext = {
   selectedPetId: string | null;
   selectedPet: Pet | undefined;
   numberOfPets: number;
+  handleAddPet: (newPet: Omit<Pet, "id">) => void;
   handleCheckoutPet: (id: string) => void;
   handleChangeSelectedPetId: (id: string) => void;
 };
@@ -34,8 +35,14 @@ export default function PetContextProvider({
   // event handlers / actions
 
   // Add a new bet by spreading the existing and adding a new one o the array
-  const handleAddPet = (newPet: Pet) => {
-    setPets((prev) => [...prev, newPet]);
+  const handleAddPet = (newPet: Omit<Pet, "id">) => {
+    setPets((prev) => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        ...newPet,
+      },
+    ]);
   };
   // Removes a pet from the state by filtering out the one with the given `id`.
   // `setPets` updates the pets array, keeping only those whose `id` does not match.
@@ -55,6 +62,7 @@ export default function PetContextProvider({
         selectedPet,
         selectedPetId,
         numberOfPets,
+        handleAddPet,
         handleCheckoutPet,
         handleChangeSelectedPetId,
       }}
