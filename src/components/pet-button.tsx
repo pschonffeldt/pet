@@ -4,15 +4,10 @@ import { PlusIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import {
   Dialog,
-  DialogPortal,
-  DialogOverlay,
   DialogTrigger,
-  DialogClose,
   DialogContent,
   DialogHeader,
-  DialogFooter,
   DialogTitle,
-  DialogDescription,
 } from "./ui/dialog";
 import PetForm from "./pet-form";
 import { useState } from "react";
