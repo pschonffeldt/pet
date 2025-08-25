@@ -15,13 +15,13 @@ export default function PetForm({
   actionType,
   onFormSubmission,
 }: PetFormProps) {
-  const { handleAddPet, selectedPet } = usePetContext();
+  const { handleAddPet, handleEditPet, selectedPet } = usePetContext();
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const formData = new FormData(event.currentTarget);
-    const newPet = {
+    const pet = {
       name: formData.get("name") as string,
       ownerName: formData.get("ownerName") as string,
       imageUrl:
@@ -30,10 +30,14 @@ export default function PetForm({
       age: +(formData.get("age") as string),
       notes: formData.get("notes") as string,
     };
-    // Log data to console (for testing purposeses)
-    console.log(newPet);
-    // Add new pet to array
-    handleAddPet(newPet);
+    // check if we are adding or editing
+    // If adding, run function
+    if (actionType === "add") {
+      handleAddPet(pet);
+      // If editing, run function
+    } else if (actionType === "edit") {
+      handleEditPet(selectedPet!.id, pet);
+    }
     // Close form modal
     onFormSubmission();
   };

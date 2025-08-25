@@ -14,6 +14,7 @@ type TPetContext = {
   selectedPet: Pet | undefined;
   numberOfPets: number;
   handleAddPet: (newPet: Omit<Pet, "id">) => void;
+  handleEditPet: (petId: string, newPetData: Omit<Pet, "id">) => void;
   handleCheckoutPet: (id: string) => void;
   handleChangeSelectedPetId: (id: string) => void;
 };
@@ -44,6 +45,20 @@ export default function PetContextProvider({
       },
     ]);
   };
+  // Edit pet details when using the edit pet function
+  const handleEditPet = (petId: string, newPetData: Omit<Pet, "id">) => {
+    setPets((prev) =>
+      prev.map((pet) => {
+        if (pet.id === petId) {
+          return {
+            id: petId,
+            ...newPetData,
+          };
+        }
+        return pet;
+      })
+    );
+  };
   // Removes a pet from the state by filtering out the one with the given `id`.
   // `setPets` updates the pets array, keeping only those whose `id` does not match.
   const handleCheckoutPet = (id: string) => {
@@ -63,6 +78,7 @@ export default function PetContextProvider({
         selectedPetId,
         numberOfPets,
         handleAddPet,
+        handleEditPet,
         handleCheckoutPet,
         handleChangeSelectedPetId,
       }}
