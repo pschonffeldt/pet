@@ -62,6 +62,7 @@ export default function PetForm({
           <Input id="name" {...register("name")} />
           {errors.name && <p className="text-red-500">{errors.name.message}</p>}
         </div>
+
         <div className="space-y-1">
           <Label htmlFor="ownerName">Owner Name</Label>
           <Input id="ownerName" {...register("ownerName")} />
@@ -69,18 +70,21 @@ export default function PetForm({
             <p className="text-red-500">{errors.ownerName.message}</p>
           )}
         </div>
+
         <div className="space-y-1">
-          <Label htmlFor="imageUrl">Image URL</Label>
+          <Label htmlFor="imageUrl">Image Url</Label>
           <Input id="imageUrl" {...register("imageUrl")} />
           {errors.imageUrl && (
             <p className="text-red-500">{errors.imageUrl.message}</p>
           )}
         </div>
+
         <div className="space-y-1">
           <Label htmlFor="age">Age</Label>
           <Input id="age" {...register("age")} />
           {errors.age && <p className="text-red-500">{errors.age.message}</p>}
         </div>
+
         <div className="space-y-1">
           <Label htmlFor="notes">Notes</Label>
           <Textarea id="notes" {...register("notes")} />
@@ -89,7 +93,8 @@ export default function PetForm({
           )}
         </div>
       </div>
-      <PetFormBtn actionType={actionType}></PetFormBtn>
+
+      <PetFormBtn actionType={actionType} />
     </form>
   );
 }
