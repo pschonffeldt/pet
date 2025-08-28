@@ -1,5 +1,8 @@
 import z from "zod";
 import { DEFAULT_PET_IMAGE } from "./constants";
+import { exitCode } from "process";
+
+export const petIdSchema = z.string().cuid();
 
 export const petFormSchema = z
   .object({
