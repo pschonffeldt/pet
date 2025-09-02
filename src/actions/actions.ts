@@ -5,8 +5,6 @@ import prisma from "@/lib/db";
 import { sleep } from "@/lib/utils";
 import { petFormSchema, petIdSchema } from "@/lib/validations";
 import bcrypt from "bcryptjs";
-import { connect } from "http2";
-import { Session } from "inspector/promises";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -103,6 +101,13 @@ export async function editPet(petId: unknown, newPetData: unknown) {
 export async function deletePet(petId: unknown) {
   await sleep(1000);
 
+  // authentication check
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  // validation
   const validatedPetId = petIdSchema.safeParse(petId);
 
   if (!validatedPetId.success) {
@@ -110,6 +115,25 @@ export async function deletePet(petId: unknown) {
       message: "Invalid pet data.",
     };
   }
+
+  // authorization check
+  const pet = await prisma.pet.findUnique({
+    where: {
+      id: validatedPetId.data,
+    },
+  });
+  if (!pet) {
+    return {
+      message: "Pet not found.",
+    };
+  }
+  if (pet.userId !== session.user.id) {
+    return {
+      message: "Not authorized.",
+    };
+  }
+
+  // database mutation
 
   try {
     await prisma.pet.delete({
