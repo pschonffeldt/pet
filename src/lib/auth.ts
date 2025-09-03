@@ -53,7 +53,7 @@ const config = {
       if (isLoggedIn && isTryingToAccessApp) {
         return true;
       }
-
+      // redirect to dashboard is faulty!
       if (isLoggedIn && !isTryingToAccessApp) {
         return Response.redirect(new URL("/app/dashboard", request.nextUrl));
       }

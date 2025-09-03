@@ -34,16 +34,13 @@ export async function logIn(prevState: unknown, formData: unknown) {
         }
         default: {
           return {
-            message: "Could not sign in",
+            message: "Error. Could not sign in",
           };
         }
       }
     }
-    return {
-      message: "Could not sign in.",
-    };
+    throw error;
   }
-  redirect("/app/dashboard");
 }
 
 export async function signUp(prevState: unknown, formData: unknown) {
