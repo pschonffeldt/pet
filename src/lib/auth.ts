@@ -45,13 +45,6 @@ const config = {
       const isLoggedIn = Boolean(auth?.user);
       const isTryingToAccessApp = request.nextUrl.pathname.includes("/app");
 
-      // console.log(
-      //   isLoggedIn,
-      //   isTryingToAccessApp,
-      //   auth?.user.hasAccess,
-      //   request.nextUrl.pathname
-      // );
-
       if (!isLoggedIn && isTryingToAccessApp) {
         return false;
       }
