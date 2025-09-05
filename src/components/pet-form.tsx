@@ -8,10 +8,11 @@ import PetFormBtn from "./pet-form-btn";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DEFAULT_PET_IMAGE } from "@/lib/constants";
-
 import { petFormSchema } from "@/lib/validations";
 import { z } from "zod";
-type PetFormInput = z.input<typeof petFormSchema>;
+
+type PetFormInput = z.input<typeof petFormSchema>; // schema INPUT (age can be string/unknown)
+type PetFormOutput = z.output<typeof petFormSchema>; // schema OUTPUT (age is number)
 
 type PetFormProps = {
   actionType: "add" | "edit";
@@ -34,11 +35,15 @@ export default function PetForm({
     defaultValues:
       actionType === "edit"
         ? {
-            name: selectedPet?.name,
-            ownerName: selectedPet?.ownerName,
-            imageUrl: selectedPet?.imageUrl,
-            age: selectedPet?.age != null ? String(selectedPet.age) : "",
-            notes: selectedPet?.notes,
+            name: selectedPet?.name ?? "",
+            ownerName: selectedPet?.ownerName ?? "",
+            imageUrl: selectedPet?.imageUrl ?? "",
+            // match INPUT type; schema will coerce to number on submit
+            age:
+              selectedPet?.age !== undefined && selectedPet?.age !== null
+                ? String(selectedPet.age)
+                : "",
+            notes: selectedPet?.notes ?? "",
           }
         : undefined,
   });
@@ -46,13 +51,17 @@ export default function PetForm({
   return (
     <form
       action={async () => {
-        const result = await trigger();
-        if (!result) return;
+        const ok = await trigger();
+        if (!ok) return;
 
         onFormSubmission();
 
-        const petData = getValues();
-        petData.imageUrl = petData.imageUrl || DEFAULT_PET_IMAGE;
+        // Parse to schema OUTPUT so age becomes a number, etc.
+        const parsed = petFormSchema.parse(getValues());
+        const petData: PetFormOutput = {
+          ...parsed,
+          imageUrl: parsed.imageUrl || DEFAULT_PET_IMAGE,
+        };
 
         if (actionType === "add") {
           await handleAddPet(petData);
@@ -87,7 +96,7 @@ export default function PetForm({
 
         <div className="space-y-1">
           <Label htmlFor="age">Age</Label>
-          <Input id="age" {...register("age")} />
+          <Input id="age" type="number" {...register("age")} />
           {errors.age && <p className="text-red-500">{errors.age.message}</p>}
         </div>
 
