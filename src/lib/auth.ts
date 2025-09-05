@@ -4,6 +4,8 @@ import bcrypt from "bcryptjs";
 import { getUserByEmail } from "./server-utils";
 import { authSchema } from "@/lib/validations";
 
+// config
+
 const config = {
   pages: {
     signIn: "/login",
