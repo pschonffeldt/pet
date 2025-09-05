@@ -24,7 +24,7 @@ const config = {
 
         const user = await getUserByEmail(email);
         if (!user) {
-          console.log("no user found");
+          console.log("No user found");
           return null;
         }
         const passwordMatch = await bcrypt.compare(
@@ -74,21 +74,26 @@ const config = {
       }
       return false;
     },
-    jwt: ({ token, user }) => {
+    jwt: async ({ token, user, trigger }) => {
       if (user) {
         // on sign in
         token.userId = user.id;
+        token.email = user.email!;
         token.hasAccess = user.hasAccess;
+      }
+
+      if (trigger === "update") {
+        const userFromDb = await getUserByEmail(token.email);
+        if (userFromDb) {
+          token.hasAccess = userFromDb.hasAccess;
+        }
       }
       return token;
     },
 
     session: ({ session, token }) => {
-      if (session.user) {
-        session.user.id = token.userId;
-        session.user.hasAccess = token.hasAccess;
-      }
-
+      session.user.id = token.userId;
+      session.user.hasAccess = token.hasAccess;
       return session;
     },
   },
