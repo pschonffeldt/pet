@@ -45,7 +45,13 @@ const config = {
       const isLoggedIn = Boolean(auth?.user);
       const isTryingToAccessApp = request.nextUrl.pathname.includes("/app");
 
-      // This logig allows usert to continue to locked areas or let them pass to open areas
+      // console.log(
+      //   isLoggedIn,
+      //   isTryingToAccessApp,
+      //   auth?.user.hasAccess,
+      //   request.nextUrl.pathname
+      // );
+
       if (!isLoggedIn && isTryingToAccessApp) {
         return false;
       }
@@ -58,7 +64,16 @@ const config = {
         return true;
       }
 
-      if (isLoggedIn && !isTryingToAccessApp) {
+      if (
+        isLoggedIn &&
+        (request.nextUrl.pathname.includes("/login") ||
+          request.nextUrl.pathname.includes("/signup")) &&
+        auth?.user.hasAccess
+      ) {
+        return Response.redirect(new URL("/app/dashboard", request.nextUrl));
+      }
+
+      if (isLoggedIn && !isTryingToAccessApp && !auth?.user.hasAccess) {
         if (
           (request.nextUrl.pathname.includes("/login") ||
             request.nextUrl.pathname.includes("/signup")) &&
