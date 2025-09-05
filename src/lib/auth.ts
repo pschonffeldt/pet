@@ -84,7 +84,11 @@ const config = {
     },
     jwt: async ({ token, user, trigger }) => {
       if (user) {
-        // on sign in
+        if (!user.id) {
+          // This both protects at runtime and narrows the type for TS
+          throw new Error("User is missing id");
+        }
+
         token.userId = user.id;
         token.email = user.email!;
         token.hasAccess = user.hasAccess;
