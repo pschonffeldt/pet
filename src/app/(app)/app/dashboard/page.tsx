@@ -5,7 +5,7 @@ import PetDetails from "@/components/pet-details";
 import PetList from "@/components/pet-list";
 import SearchForm from "@/components/search-form";
 import Stats from "@/components/stats";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth-no-edge";
 import { redirect } from "next/navigation";
 
 export default async function Page() {
