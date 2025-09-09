@@ -21,12 +21,6 @@ function getBaseUrl() {
 
 // --- user actions ---
 
-export async function logOut() {
-  await signOut({ redirectTo: "/" });
-}
-
-// actions.ts (only the auth parts shown)
-
 export async function logIn(prevState: unknown, formData: unknown) {
   if (!(formData instanceof FormData)) return { message: "Invalid form data." };
 
@@ -34,7 +28,7 @@ export async function logIn(prevState: unknown, formData: unknown) {
   const parsed = authSchema.safeParse(entries);
   if (!parsed.success) return { message: "Invalid form data." };
 
-  // Decide destination BEFORE sign-in
+  // Figure out where to go *after* login
   const user = await prisma.user.findUnique({
     where: { email: parsed.data.email },
     select: { hasAccess: true },
@@ -42,13 +36,12 @@ export async function logIn(prevState: unknown, formData: unknown) {
   const dest = user?.hasAccess ? "/app/dashboard" : "/payment";
 
   try {
-    // Important: prevent NextAuth from doing its own redirect
-    // Then we call Next.js `redirect()` ourselves.
-    await signIn(
-      "credentials",
-      formData as FormData,
-      { redirect: false } as any
-    );
+    // Use callbackUrl (reliably honored) and let NextAuth redirect
+    await signIn("credentials", formData, {
+      redirect: true,
+      callbackUrl: dest,
+    } as any);
+    return { message: "Login succeeded but no redirect occurred." };
   } catch (error) {
     if (error instanceof AuthError) {
       switch (error.type) {
@@ -60,8 +53,6 @@ export async function logIn(prevState: unknown, formData: unknown) {
     }
     throw error;
   }
-
-  redirect(dest);
 }
 
 export async function signUp(prevState: unknown, formData: unknown) {
@@ -89,22 +80,24 @@ export async function signUp(prevState: unknown, formData: unknown) {
     };
   }
 
-  // Create the session for the new user (hasAccess=false by default)
   try {
-    await signIn(
-      "credentials",
-      formData as FormData,
-      { redirect: false } as any
-    );
+    // New users must pay first → send them to /payment
+    await signIn("credentials", formData, {
+      redirect: true,
+      callbackUrl: "/payment",
+    } as any);
+    return { message: "Signup succeeded but no redirect occurred." };
   } catch (error) {
     if (error instanceof AuthError) {
       return { message: "Error. Could not sign in after sign up." };
     }
     throw error;
   }
+}
 
-  // New users must pay → force navigation to /payment
-  redirect("/payment");
+// Keep this export as well
+export async function logOut() {
+  await signOut({ redirectTo: "/" });
 }
 
 // --- pet actions ---
