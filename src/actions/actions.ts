@@ -2,33 +2,39 @@
 
 import { signIn, signOut } from "@/lib/auth-no-edge";
 import prisma from "@/lib/db";
-import { checkAuth, getPetById } from "@/lib/server-utils";
 import { authSchema, petFormSchema, petIdSchema } from "@/lib/validations";
 import { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { AuthError } from "next-auth";
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { checkAuth, getPetById } from "@/lib/server-utils";
+import { revalidatePath } from "next/cache";
+import Stripe from "stripe";
 
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+// Instantiate Stripe (do NOT pass apiVersion to avoid TS mismatch)
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
-/** Prefer explicit canonical URL; fall back to Vercel host; dev -> localhost */
-function getBaseUrl() {
-  if (process.env.CANONICAL_URL) return process.env.CANONICAL_URL;
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  return "http://localhost:3000";
-}
+// Simple base URL helper (replaces any old getBaseUrl usage)
+const BASE_URL =
+  process.env.CANONICAL_URL ??
+  (process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "http://localhost:3000");
 
 // --- user actions ---
 
-export async function logIn(prevState: unknown, formData: unknown) {
+export async function logOut() {
+  await signOut({ redirectTo: "/" });
+}
+
+export async function logIn(_prev: unknown, formData: unknown) {
   if (!(formData instanceof FormData)) return { message: "Invalid form data." };
 
   const entries = Object.fromEntries(formData.entries());
   const parsed = authSchema.safeParse(entries);
   if (!parsed.success) return { message: "Invalid form data." };
 
-  // Figure out where to go *after* login
+  // where should this user land?
   const user = await prisma.user.findUnique({
     where: { email: parsed.data.email },
     select: { hasAccess: true },
@@ -36,26 +42,20 @@ export async function logIn(prevState: unknown, formData: unknown) {
   const dest = user?.hasAccess ? "/app/dashboard" : "/payment";
 
   try {
-    // Use callbackUrl (reliably honored) and let NextAuth redirect
-    await signIn("credentials", formData, {
-      redirect: true,
-      callbackUrl: dest,
-    } as any);
-    return { message: "Login succeeded but no redirect occurred." };
-  } catch (error) {
-    if (error instanceof AuthError) {
-      switch (error.type) {
-        case "CredentialsSignin":
-          return { message: "Invalid credentials." };
-        default:
-          return { message: "Error. Could not sign in." };
-      }
+    // create session but DON'T redirect
+    await signIn("credentials", formData, { redirect: false } as any);
+  } catch (err) {
+    if (err instanceof AuthError && err.type === "CredentialsSignin") {
+      return { message: "Invalid credentials." };
     }
-    throw error;
+    throw err;
   }
+
+  // YOU redirect
+  redirect(dest);
 }
 
-export async function signUp(prevState: unknown, formData: unknown) {
+export async function signUp(_prev: unknown, formData: unknown) {
   if (!(formData instanceof FormData)) return { message: "Invalid form data." };
 
   const entries = Object.fromEntries(formData.entries());
@@ -68,7 +68,6 @@ export async function signUp(prevState: unknown, formData: unknown) {
   try {
     await prisma.user.create({ data: { email, hashedPassword } });
   } catch (err: unknown) {
-    console.error("SIGNUP prisma.user.create failed:", err);
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2002") return { message: "Email already exists." };
       return { message: `Could not create user (Prisma ${err.code}).` };
@@ -80,24 +79,15 @@ export async function signUp(prevState: unknown, formData: unknown) {
     };
   }
 
+  // create session, no redirect
   try {
-    // New users must pay first → send them to /payment
-    await signIn("credentials", formData, {
-      redirect: true,
-      callbackUrl: "/payment",
-    } as any);
-    return { message: "Signup succeeded but no redirect occurred." };
-  } catch (error) {
-    if (error instanceof AuthError) {
-      return { message: "Error. Could not sign in after sign up." };
-    }
-    throw error;
+    await signIn("credentials", formData, { redirect: false } as any);
+  } catch {
+    return { message: "Error. Could not sign in after sign up." };
   }
-}
 
-// Keep this export as well
-export async function logOut() {
-  await signOut({ redirectTo: "/" });
+  // new users must pay
+  redirect("/payment");
 }
 
 // --- pet actions ---
@@ -178,21 +168,20 @@ export async function deletePet(petId: unknown) {
 export async function createCheckoutSession() {
   const session = await checkAuth();
 
-  const base = getBaseUrl();
-
   const checkoutSession = await stripe.checkout.sessions.create({
     customer_email: session.user.email,
     line_items: [
       {
-        // keep your existing price id here
+        // keep your existing price ID
         price: "price_1S3fq1BUzkE5WYavwfF4hGQs",
         quantity: 1,
       },
     ],
     mode: "payment",
-    success_url: `${base}/payment?success=true`,
-    cancel_url: `${base}/payment?cancelled=true`,
+    success_url: `${BASE_URL}/payment?success=true`,
+    cancel_url: `${BASE_URL}/payment?cancelled=true`,
   });
 
-  redirect(checkoutSession.url);
+  // Redirect the user to Stripe Checkout
+  redirect(checkoutSession.url!);
 }
