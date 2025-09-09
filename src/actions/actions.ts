@@ -22,19 +22,24 @@ function getBaseUrl() {
 // --- user actions ---
 
 export async function logIn(prevState: unknown, formData: unknown) {
-  if (!(formData instanceof FormData)) {
-    return { message: "Invalid form data." };
-  }
+  if (!(formData instanceof FormData)) return { message: "Invalid form data." };
 
-  // Parse to access email for post-login routing
   const entries = Object.fromEntries(formData.entries());
   const parsed = authSchema.safeParse(entries);
-  if (!parsed.success) {
-    return { message: "Invalid form data." };
-  }
+  if (!parsed.success) return { message: "Invalid form data." };
+
+  // Decide destination BEFORE signIn
+  const user = await prisma.user.findUnique({
+    where: { email: parsed.data.email },
+    select: { hasAccess: true },
+  });
+  const dest = user?.hasAccess ? "/app/dashboard" : "/payment";
 
   try {
-    await signIn("credentials", formData);
+    // Let NextAuth perform the redirect (throws NEXT_REDIRECT on success)
+    await signIn("credentials", formData, { redirectTo: dest } as any);
+    // If it didn't throw (shouldn't happen), fallback:
+    return { message: "Login succeeded but no redirect occurred." };
   } catch (error) {
     if (error instanceof AuthError) {
       switch (error.type) {
@@ -44,61 +49,27 @@ export async function logIn(prevState: unknown, formData: unknown) {
           return { message: "Error. Could not sign in." };
       }
     }
-    throw error; // allow NEXT_REDIRECT, etc. to bubble
-  }
-
-  // Decide destination based on hasAccess
-  const user = await prisma.user.findUnique({
-    where: { email: parsed.data.email },
-    select: { hasAccess: true },
-  });
-
-  if (user?.hasAccess) {
-    redirect("/app/dashboard");
-  } else {
-    redirect("/payment");
+    throw error; // keep NEXT_REDIRECT bubbling if any
   }
 }
 
 export async function signUp(prevState: unknown, formData: unknown) {
-  if (!(formData instanceof FormData)) {
-    return { message: "Invalid form data." };
-  }
+  if (!(formData instanceof FormData)) return { message: "Invalid form data." };
 
   const formDataEntries = Object.fromEntries(formData.entries());
   const validatedFormData = authSchema.safeParse(formDataEntries);
-  if (!validatedFormData.success) {
-    return { message: "Invalid form data." };
-  }
+  if (!validatedFormData.success) return { message: "Invalid form data." };
 
   const { email, password } = validatedFormData.data;
   const hashedPassword = await bcrypt.hash(password, 10);
 
   try {
-    console.info("SIGNUP: creating user", { email });
-    await prisma.user.create({
-      data: { email, hashedPassword },
-    });
+    await prisma.user.create({ data: { email, hashedPassword } });
   } catch (err: unknown) {
     console.error("SIGNUP prisma.user.create failed:", err);
-
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2002") return { message: "Email already exists." };
-      if (err.code === "P2000")
-        return {
-          message: "Value too long for a column (check input lengths).",
-        };
-      if (err.code === "P2012")
-        return {
-          message: "Server error: missing required column. Run migrations.",
-        };
       return { message: `Could not create user (Prisma ${err.code}).` };
-    }
-    if (err instanceof Prisma.PrismaClientValidationError) {
-      return { message: "Invalid data sent to the database." };
-    }
-    if (err instanceof Prisma.PrismaClientInitializationError) {
-      return { message: "Database connection error. Check your env vars/DB." };
     }
     return {
       message: `Could not create user: ${
@@ -107,15 +78,16 @@ export async function signUp(prevState: unknown, formData: unknown) {
     };
   }
 
-  // Create a session for the new user (hasAccess=false by default)
-  await signIn("credentials", formData);
-
-  // New users must pay
-  redirect("/payment");
-}
-
-export async function logOut() {
-  await signOut({ redirectTo: "/" });
+  try {
+    // New users always go to /payment
+    await signIn("credentials", formData, { redirectTo: "/payment" } as any);
+    return { message: "Signup succeeded but no redirect occurred." };
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return { message: "Error. Could not sign in after sign up." };
+    }
+    throw error;
+  }
 }
 
 // --- pet actions ---
