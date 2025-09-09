@@ -25,6 +25,8 @@ export async function logOut() {
   await signOut({ redirectTo: "/" });
 }
 
+// actions.ts (only the auth parts shown)
+
 export async function logIn(prevState: unknown, formData: unknown) {
   if (!(formData instanceof FormData)) return { message: "Invalid form data." };
 
@@ -32,7 +34,7 @@ export async function logIn(prevState: unknown, formData: unknown) {
   const parsed = authSchema.safeParse(entries);
   if (!parsed.success) return { message: "Invalid form data." };
 
-  // Decide destination BEFORE signIn
+  // Decide destination BEFORE sign-in
   const user = await prisma.user.findUnique({
     where: { email: parsed.data.email },
     select: { hasAccess: true },
@@ -40,10 +42,13 @@ export async function logIn(prevState: unknown, formData: unknown) {
   const dest = user?.hasAccess ? "/app/dashboard" : "/payment";
 
   try {
-    // Let NextAuth perform the redirect (throws NEXT_REDIRECT on success)
-    await signIn("credentials", formData, { redirectTo: dest } as any);
-    // If it didn't throw (shouldn't happen), fallback:
-    return { message: "Login succeeded but no redirect occurred." };
+    // Important: prevent NextAuth from doing its own redirect
+    // Then we call Next.js `redirect()` ourselves.
+    await signIn(
+      "credentials",
+      formData as FormData,
+      { redirect: false } as any
+    );
   } catch (error) {
     if (error instanceof AuthError) {
       switch (error.type) {
@@ -53,18 +58,20 @@ export async function logIn(prevState: unknown, formData: unknown) {
           return { message: "Error. Could not sign in." };
       }
     }
-    throw error; // keep NEXT_REDIRECT bubbling if any
+    throw error;
   }
+
+  redirect(dest);
 }
 
 export async function signUp(prevState: unknown, formData: unknown) {
   if (!(formData instanceof FormData)) return { message: "Invalid form data." };
 
-  const formDataEntries = Object.fromEntries(formData.entries());
-  const validatedFormData = authSchema.safeParse(formDataEntries);
-  if (!validatedFormData.success) return { message: "Invalid form data." };
+  const entries = Object.fromEntries(formData.entries());
+  const parsed = authSchema.safeParse(entries);
+  if (!parsed.success) return { message: "Invalid form data." };
 
-  const { email, password } = validatedFormData.data;
+  const { email, password } = parsed.data;
   const hashedPassword = await bcrypt.hash(password, 10);
 
   try {
@@ -82,16 +89,22 @@ export async function signUp(prevState: unknown, formData: unknown) {
     };
   }
 
+  // Create the session for the new user (hasAccess=false by default)
   try {
-    // New users always go to /payment
-    await signIn("credentials", formData, { redirectTo: "/payment" } as any);
-    return { message: "Signup succeeded but no redirect occurred." };
+    await signIn(
+      "credentials",
+      formData as FormData,
+      { redirect: false } as any
+    );
   } catch (error) {
     if (error instanceof AuthError) {
       return { message: "Error. Could not sign in after sign up." };
     }
     throw error;
   }
+
+  // New users must pay → force navigation to /payment
+  redirect("/payment");
 }
 
 // --- pet actions ---
