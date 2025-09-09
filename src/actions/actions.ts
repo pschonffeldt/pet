@@ -82,7 +82,6 @@ export async function signUp(_prev: unknown, formData: unknown) {
   }
 
   // Immediately sign the user in and let NextAuth redirect to /payment.
-  // IMPORTANT: build a *fresh* FormData so we don't reuse the one we iterated.
   try {
     const creds = new FormData();
     creds.set("email", email);
