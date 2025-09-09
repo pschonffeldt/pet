@@ -21,6 +21,10 @@ function getBaseUrl() {
 
 // --- user actions ---
 
+export async function logOut() {
+  await signOut({ redirectTo: "/" });
+}
+
 export async function logIn(prevState: unknown, formData: unknown) {
   if (!(formData instanceof FormData)) return { message: "Invalid form data." };
 
