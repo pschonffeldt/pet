@@ -58,6 +58,7 @@ export async function logIn(_prev: unknown, formData: unknown) {
 export async function signUp(_prev: unknown, formData: unknown) {
   if (!(formData instanceof FormData)) return { message: "Invalid form data." };
 
+  // Validate input
   const entries = Object.fromEntries(formData.entries());
   const parsed = authSchema.safeParse(entries);
   if (!parsed.success) return { message: "Invalid form data." };
@@ -65,6 +66,7 @@ export async function signUp(_prev: unknown, formData: unknown) {
   const { email, password } = parsed.data;
   const hashedPassword = await bcrypt.hash(password, 10);
 
+  // Create user
   try {
     await prisma.user.create({ data: { email, hashedPassword } });
   } catch (err: unknown) {
@@ -79,15 +81,27 @@ export async function signUp(_prev: unknown, formData: unknown) {
     };
   }
 
-  // create session, no redirect
+  // Immediately sign the user in and let NextAuth redirect to /payment.
+  // IMPORTANT: build a *fresh* FormData so we don't reuse the one we iterated.
   try {
-    await signIn("credentials", formData, { redirect: false } as any);
-  } catch {
-    return { message: "Error. Could not sign in after sign up." };
-  }
+    const creds = new FormData();
+    creds.set("email", email);
+    creds.set("password", password);
 
-  // new users must pay
-  redirect("/payment");
+    // NextAuth will throw a NEXT_REDIRECT on success, so this call won't return.
+    await signIn("credentials", creds, { redirectTo: "/payment" } as any);
+
+    // Fallback (shouldn't be reached if redirect happens)
+    return { message: "Signed up. Redirecting…" };
+  } catch (err) {
+    if (err instanceof AuthError) {
+      // e.g. CredentialsSignin
+      console.error("SIGNUP: signIn after create failed:", err);
+      return { message: "Error. Could not sign in after sign up." };
+    }
+    // Preserve non-auth errors (e.g., the redirect signal)
+    throw err;
+  }
 }
 
 // --- pet actions ---
