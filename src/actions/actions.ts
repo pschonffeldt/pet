@@ -42,46 +42,109 @@ export async function logIn(prevState: unknown, formData: unknown) {
   }
 }
 
+// export async function signUp(prevState: unknown, formData: unknown) {
+//   // check if form data is FormData type
+//   if (!(formData instanceof FormData)) {
+//     return {
+//       message: "Invalid form data.",
+//     };
+//   }
+
+//   // convert formData to a plain object
+//   const formDataEntries = Object.fromEntries(formData.entries());
+
+//   // validation
+//   const validatedFormData = authSchema.safeParse(formDataEntries);
+//   if (!validatedFormData.success) {
+//     return {
+//       message: "Invalid form data.",
+//     };
+//   }
+
+//   const { email, password } = validatedFormData.data;
+//   const hashedPassword = await bcrypt.hash(password, 10);
+//   try {
+//     await prisma.user.create({
+//       data: {
+//         email,
+//         hashedPassword,
+//       },
+//     });
+//   } catch (error) {
+//     if (error instanceof Prisma.PrismaClientKnownRequestError) {
+//       if (error.code === "P2002") {
+//         return {
+//           message: "Email already exists.",
+//         };
+//       }
+//     }
+//     return {
+//       message: "Could not create user.",
+//     };
+//   }
+//   await signIn("credentials", formData);
+// }
+
 export async function signUp(prevState: unknown, formData: unknown) {
-  // check if form data is FormData type
   if (!(formData instanceof FormData)) {
-    return {
-      message: "Invalid form data.",
-    };
+    return { message: "Invalid form data." };
   }
 
-  // convert formData to a plain object
   const formDataEntries = Object.fromEntries(formData.entries());
 
-  // validation
   const validatedFormData = authSchema.safeParse(formDataEntries);
   if (!validatedFormData.success) {
-    return {
-      message: "Invalid form data.",
-    };
+    return { message: "Invalid form data." };
   }
 
   const { email, password } = validatedFormData.data;
   const hashedPassword = await bcrypt.hash(password, 10);
+
   try {
+    console.info("SIGNUP: creating user", { email });
     await prisma.user.create({
-      data: {
-        email,
-        hashedPassword,
-      },
+      data: { email, hashedPassword },
     });
-  } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      if (error.code === "P2002") {
+  } catch (err: unknown) {
+    // 🔎 Log the real error so you can see it in your server/Vercel logs
+    console.error("SIGNUP prisma.user.create failed:", err);
+
+    // Prisma-known errors
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      if (err.code === "P2002") {
+        // Unique constraint (email)
+        return { message: "Email already exists." };
+      }
+      if (err.code === "P2000") {
         return {
-          message: "Email already exists.",
+          message: "Value too long for a column (check input lengths).",
         };
       }
+      if (err.code === "P2012") {
+        return {
+          message: "Server error: missing required column. Run migrations.",
+        };
+      }
+      // Fallback with code for visibility
+      return { message: `Could not create user (Prisma ${err.code}).` };
     }
+
+    // Other Prisma errors
+    if (err instanceof Prisma.PrismaClientValidationError) {
+      return { message: "Invalid data sent to the database." };
+    }
+    if (err instanceof Prisma.PrismaClientInitializationError) {
+      return { message: "Database connection error. Check your env vars/DB." };
+    }
+
+    // Generic fallback
     return {
-      message: "Could not create user.",
+      message: `Could not create user: ${
+        (err as Error)?.message ?? "Unknown error"
+      }`,
     };
   }
+
   await signIn("credentials", formData);
 }
 
