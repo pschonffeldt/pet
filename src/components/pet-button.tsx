@@ -1,13 +1,13 @@
 "use client";
 
-import { PlusIcon } from "lucide-react";
+import { PlusIcon } from "@radix-ui/react-icons";
 import { Button } from "./ui/button";
 import {
   Dialog,
-  DialogTrigger,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "./ui/dialog";
 import PetForm from "./pet-form";
 import { useState } from "react";
@@ -27,7 +27,7 @@ export default function PetButton({
   children,
 }: PetButtonProps) {
   const [isFormOpen, setIsFormOpen] = useState(false);
-  // Check if we are clicking the checkout button
+
   if (actionType === "checkout") {
     return (
       <Button variant="secondary" disabled={disabled} onClick={onClick}>
@@ -35,11 +35,10 @@ export default function PetButton({
       </Button>
     );
   }
-  // Otherwise we run this
+
   return (
     <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
       <DialogTrigger asChild>
-        {/* And we check which button (from the other 2) are we clickign */}
         {actionType === "add" ? (
           <Button size="icon">
             <PlusIcon className="h-6 w-6" />
@@ -48,11 +47,11 @@ export default function PetButton({
           <Button variant="secondary">{children}</Button>
         )}
       </DialogTrigger>
+
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {/* Depending on the button we change the form title */}
-            {actionType === "add" ? "Add a new Pet" : "Edit pet"}
+            {actionType === "add" ? "Add a new pet" : "Edit pet"}
           </DialogTitle>
         </DialogHeader>
 
@@ -63,7 +62,7 @@ export default function PetButton({
               setIsFormOpen(false);
             });
           }}
-        ></PetForm>
+        />
       </DialogContent>
     </Dialog>
   );

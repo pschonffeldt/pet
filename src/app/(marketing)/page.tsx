@@ -5,13 +5,14 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <main className="bg-[#5dc9a8] min-h-screen flex flex-col xl:flex-row items-center justify-center gap-10">
+    <main className="bg-[#5DC9A8] min-h-screen flex flex-col xl:flex-row items-center justify-center gap-10">
       <Image
         src="https://bytegrad.com/course-assets/react-nextjs/petsoft-preview.png"
         alt="Preview of PetSoft"
         width={519}
         height={472}
       />
+
       <div>
         <Logo />
         <h1 className="text-5xl font-semibold my-6 max-w-[500px]">

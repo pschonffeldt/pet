@@ -89,8 +89,8 @@ export default function PetContextProvider({
     <PetContext.Provider
       value={{
         pets: optimisticPets,
-        selectedPet,
         selectedPetId,
+        selectedPet,
         numberOfPets,
         handleAddPet,
         handleEditPet,

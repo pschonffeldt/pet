@@ -33,7 +33,7 @@ export async function logIn(prevState: unknown, formData: unknown) {
         }
         default: {
           return {
-            message: "Error. Could not sign in",
+            message: "Error. Could not sign in.",
           };
         }
       }
@@ -112,12 +112,14 @@ export async function addPet(pet: unknown) {
         },
       },
     });
-    revalidatePath("/app", "layout");
   } catch (error) {
+    console.log(error);
     return {
-      message: "Could not add pet...",
+      message: "Could not add pet.",
     };
   }
+
+  revalidatePath("/app", "layout");
 }
 
 export async function editPet(petId: unknown, newPetData: unknown) {
@@ -159,10 +161,10 @@ export async function editPet(petId: unknown, newPetData: unknown) {
     });
   } catch (error) {
     return {
-      message: "Could not edit pet...",
+      message: "Could not edit pet.",
     };
   }
-  revalidatePath("app", "layout");
+  revalidatePath("/app", "layout");
 }
 
 export async function deletePet(petId: unknown) {
@@ -204,7 +206,7 @@ export async function deletePet(petId: unknown) {
       message: "Could not delete pet...",
     };
   }
-  revalidatePath("app", "layout");
+  revalidatePath("/app", "layout");
 }
 
 // payment actions

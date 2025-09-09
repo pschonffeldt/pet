@@ -47,7 +47,7 @@ export default function Page({
 
       {searchParams.success && (
         <p className="text-sm text-green-700">
-          Payment succesful! You now have 1 year access to Petsoft
+          Payment successful! You now have 1 year access to Petsoft
         </p>
       )}
       {searchParams.cancelled && (

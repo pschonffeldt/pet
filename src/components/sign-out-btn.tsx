@@ -2,10 +2,11 @@
 
 import { logOut } from "@/actions/actions";
 import { Button } from "./ui/button";
-import { startTransition, useTransition } from "react";
+import { useTransition } from "react";
 
 export default function SignOutBtn() {
   const [isPending, startTransition] = useTransition();
+
   return (
     <Button
       disabled={isPending}

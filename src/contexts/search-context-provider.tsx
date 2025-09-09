@@ -17,12 +17,13 @@ export default function SearchContextProvider({
   children,
 }: SearchContextProvider) {
   // state
-  const [searchQuery, setsearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+
   // derived state
 
   // event handlers / actions
   const handleChangeSearchQuery = (newValue: string) => {
-    setsearchQuery(newValue);
+    setSearchQuery(newValue);
   };
 
   return (

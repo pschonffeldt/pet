@@ -1,6 +1,6 @@
 "use client";
 
-import { signUp, logIn } from "@/actions/actions";
+import { logIn, signUp } from "@/actions/actions";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import AuthFormBtn from "./auth-form-btn";
@@ -20,6 +20,7 @@ export default function AuthForm({ type }: AuthFormProps) {
         <Label htmlFor="email">Email</Label>
         <Input id="email" name="email" type="email" required maxLength={100} />
       </div>
+
       <div className="mb-4 mt-2 space-y-1">
         <Label htmlFor="password">Password</Label>
         <Input
@@ -36,7 +37,6 @@ export default function AuthForm({ type }: AuthFormProps) {
       {signUpError && (
         <p className="text-red-500 text-sm mt-2">{signUpError.message}</p>
       )}
-
       {logInError && (
         <p className="text-red-500 text-sm mt-2">{logInError.message}</p>
       )}

@@ -5,14 +5,8 @@ import PetDetails from "@/components/pet-details";
 import PetList from "@/components/pet-list";
 import SearchForm from "@/components/search-form";
 import Stats from "@/components/stats";
-import { auth } from "@/lib/auth-no-edge";
-import { redirect } from "next/navigation";
 
 export default async function Page() {
-  const session = await auth();
-  if (!session?.user) {
-    redirect("/login");
-  }
   return (
     <main>
       <div className="flex items-center justify-between text-white py-8">
@@ -29,6 +23,7 @@ export default async function Page() {
         <div className="relative md:row-start-2 md:row-span-full md:col-start-1 md:col-span-1">
           <ContentBlock>
             <PetList />
+
             <div className="absolute bottom-4 right-4">
               <PetButton actionType="add" />
             </div>

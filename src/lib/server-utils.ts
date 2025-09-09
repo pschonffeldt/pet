@@ -1,4 +1,5 @@
 import "server-only";
+
 import { redirect } from "next/navigation";
 import { auth } from "./auth-no-edge";
 import { Pet, User } from "@prisma/client";
@@ -9,7 +10,17 @@ export async function checkAuth() {
   if (!session?.user) {
     redirect("/login");
   }
+
   return session;
+}
+
+export async function getUserByEmail(email: User["email"]) {
+  const user = await prisma.user.findUnique({
+    where: {
+      email,
+    },
+  });
+  return user;
 }
 
 export async function getPetById(petId: Pet["id"]) {
@@ -28,13 +39,4 @@ export async function getPetsByUserId(userId: User["id"]) {
     },
   });
   return pets;
-}
-
-export async function getUserByEmail(email: User["email"]) {
-  const user = await prisma.user.findUnique({
-    where: {
-      email,
-    },
-  });
-  return user;
 }

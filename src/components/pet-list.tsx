@@ -3,13 +3,15 @@
 import { usePetContext, useSearchContext } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { useMemo } from "react";
 
 export default function PetList() {
   const { pets, selectedPetId, handleChangeSelectedPetId } = usePetContext();
   const { searchQuery } = useSearchContext();
 
-  const filteredPets = pets.filter((pet) =>
-    pet.name.toLowerCase().includes(searchQuery)
+  const filteredPets = useMemo(
+    () => pets.filter((pet) => pet.name.toLowerCase().includes(searchQuery)),
+    [pets, searchQuery]
   );
 
   return (
@@ -19,8 +21,10 @@ export default function PetList() {
           <button
             onClick={() => handleChangeSelectedPetId(pet.id)}
             className={cn(
-              "flex items-center h-[70px] w-full cursor-pointer px-5 text-base gap-3 hover:bg-[#EFF1f2] focus:bg-[#EFF1F2] transition",
-              { "bg-[#EFF1F2]": selectedPetId === pet.id }
+              "flex items-center h-[70px] w-full cursor-pointer px-5 text-base gap-3 hover:bg-[#EFF1F2] focus:bg-[#EFF1F2] transition",
+              {
+                "bg-[#EFF1F2]": selectedPetId === pet.id,
+              }
             )}
           >
             <Image

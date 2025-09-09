@@ -5,16 +5,14 @@ import { getUserByEmail } from "./server-utils";
 import { authSchema } from "@/lib/validations";
 import { nextAuthEdgeConfig } from "./auth-edge";
 
-// config
-
 const config = {
   ...nextAuthEdgeConfig,
   providers: [
     Credentials({
       async authorize(credentials) {
-        // run on login
+        // runs on login
 
-        // validate the object
+        // validation
         const validatedFormData = authSchema.safeParse(credentials);
         if (!validatedFormData.success) {
           return null;
@@ -28,14 +26,16 @@ const config = {
           console.log("No user found");
           return null;
         }
-        const passwordMatch = await bcrypt.compare(
+
+        const passwordsMatch = await bcrypt.compare(
           password,
           user.hashedPassword
         );
-        if (!passwordMatch) {
+        if (!passwordsMatch) {
           console.log("Invalid credentials");
           return null;
         }
+
         return user;
       },
     }),

@@ -49,14 +49,14 @@ function TopBar({ pet }: Props) {
         width={75}
         className="h-[75px] w-[75px] rounded-full object-cover"
       />
+
       <h2 className="text-3xl font-semibold leading-7 ml-5">{pet.name}</h2>
+
       <div className="ml-auto space-x-2">
         <PetButton actionType="edit">Edit</PetButton>
         <PetButton
           actionType="checkout"
-          onClick={async () => {
-            await handleCheckoutPet(pet.id);
-          }}
+          onClick={async () => await handleCheckoutPet(pet.id)}
         >
           Checkout
         </PetButton>
@@ -74,6 +74,7 @@ function OtherInfo({ pet }: Props) {
         </h3>
         <p className="mt-1 text-lg text-zinc-800">{pet.ownerName}</p>
       </div>
+
       <div>
         <h3 className="text-[13px] font-medium uppercase text-zinc-700">Age</h3>
         <p className="mt-1 text-lg text-zinc-800">{pet.age}</p>
