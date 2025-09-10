@@ -110,7 +110,7 @@ export async function addPet(pet: unknown) {
 
   const validatedPet = petFormSchema.safeParse(pet);
   if (!validatedPet.success) {
-    return { message: "Invalid pet data." };
+    return { message: "Invalid kid data." };
   }
 
   try {
@@ -122,7 +122,7 @@ export async function addPet(pet: unknown) {
     });
   } catch (error) {
     console.error(error);
-    return { message: "Could not add pet." };
+    return { message: "Could not add kid." };
   }
 
   revalidatePath("/app", "layout");
@@ -135,12 +135,12 @@ export async function editPet(petId: unknown, newPetData: unknown) {
   const validatedPet = petFormSchema.safeParse(newPetData);
 
   if (!validatedPetId.success || !validatedPet.success) {
-    return { message: "Invalid pet data." };
+    return { message: "Invalid kid data." };
   }
 
   // Authorization
   const pet = await getPetById(validatedPetId.data);
-  if (!pet) return { message: "Pet not found." };
+  if (!pet) return { message: "Kid not found." };
   if (pet.userId !== session.user.id) return { message: "Not authorized." };
 
   try {
@@ -149,7 +149,7 @@ export async function editPet(petId: unknown, newPetData: unknown) {
       data: validatedPet.data,
     });
   } catch {
-    return { message: "Could not edit pet." };
+    return { message: "Could not edit kid." };
   }
 
   revalidatePath("/app", "layout");
@@ -160,17 +160,17 @@ export async function deletePet(petId: unknown) {
 
   const validatedPetId = petIdSchema.safeParse(petId);
   if (!validatedPetId.success) {
-    return { message: "Invalid pet data." };
+    return { message: "Invalid kid data." };
   }
 
   const pet = await getPetById(validatedPetId.data);
-  if (!pet) return { message: "Pet not found." };
+  if (!pet) return { message: "Kid not found." };
   if (pet.userId !== session.user.id) return { message: "Not authorized." };
 
   try {
     await prisma.pet.delete({ where: { id: validatedPetId.data } });
   } catch {
-    return { message: "Could not delete pet..." };
+    return { message: "Could not delete kid..." };
   }
 
   revalidatePath("/app", "layout");

@@ -28,7 +28,7 @@ export default function PetDetails() {
 function EmptyView() {
   return (
     <p className="h-full flex justify-center items-center text-2xl font-medium">
-      No pet selected
+      No kid selected
     </p>
   );
 }
@@ -44,7 +44,7 @@ function TopBar({ pet }: Props) {
     <div className="flex items-center bg-white px-8 py-5 border-b border-light">
       <Image
         src={pet.imageUrl}
-        alt="Selected pet image"
+        alt="Selected kid image"
         height={75}
         width={75}
         className="h-[75px] w-[75px] rounded-full object-cover"
@@ -70,7 +70,7 @@ function OtherInfo({ pet }: Props) {
     <div className="flex justify-around py-10 px-5 text-center">
       <div>
         <h3 className="text-[13px] font-medium uppercase text-zinc-700">
-          Owner name
+          Parent name
         </h3>
         <p className="mt-1 text-lg text-zinc-800">{pet.ownerName}</p>
       </div>

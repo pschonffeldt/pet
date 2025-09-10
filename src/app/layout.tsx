@@ -6,8 +6,8 @@ import { SessionProvider } from "next-auth/react";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "PetSoft - Pet daycare software",
-  description: "Take care of people's pets responsibly with PetSoft.",
+  title: "CareSoft - Daycare software",
+  description: "Take care of people's kids responsibly with CareSoft.",
 };
 
 export default function RootLayout({

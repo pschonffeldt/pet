@@ -52,7 +52,7 @@ export default function PetButton({
         <DialogHeader>
           <DialogTitle>
             {/* Depending on the button we change the form title */}
-            {actionType === "add" ? "Add a new Pet" : "Edit pet"}
+            {actionType === "add" ? "Add a new kid" : "Edit kid"}
           </DialogTitle>
         </DialogHeader>
 

@@ -5,7 +5,7 @@ import Link from "next/link";
 export default function Logo() {
   return (
     <Link href="/">
-      <Image src={logo} alt="PetSoft logo" />
+      <Image src={logo} alt="CareSoft logo" />
     </Link>
   );
 }
