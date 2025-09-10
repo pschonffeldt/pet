@@ -73,7 +73,7 @@ export default function PetForm({
     >
       <div className="space-y-3">
         <div className="space-y-1">
-          <Label htmlFor="name">Kid's Name</Label>
+          <Label htmlFor="name">Kid Name</Label>
           <Input id="name" {...register("name")} />
           {errors.name && <p className="text-red-500">{errors.name.message}</p>}
         </div>
