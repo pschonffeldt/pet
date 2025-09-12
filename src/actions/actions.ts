@@ -19,11 +19,20 @@ export async function logIn(_prev: unknown, formData: unknown) {
     return { message: "Invalid form data." };
   }
 
+  const email = String(formData.get("email") ?? "");
+  const password = String(formData.get("password") ?? "");
+
+  if (!email || !password) {
+    return { message: "Please enter email and password." };
+  }
+
   try {
-    // Auth.js v5: 3rd arg is query params; this triggers a Redirect to /app on success
-    await signIn("credentials", formData, { callbackUrl: "/app" });
-    return; // unreachable on success (redirect thrown)
-  } catch {
+    // v5: 3rd arg are query params; this will throw a Redirect on success
+    await signIn("credentials", { email, password }, { callbackUrl: "/app" });
+    return; // unreachable on success
+  } catch (err: any) {
+    // while debugging, surface the real reason:
+    console.error("signIn error:", err);
     return { message: "Invalid credentials or sign-in error." };
   }
 }
