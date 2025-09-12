@@ -15,33 +15,23 @@ const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 // --- user actions ---
 
 export async function logIn(prevState: unknown, formData: unknown) {
-  if (!(formData instanceof FormData)) {
-    return {
-      message: "Invalid form data.",
-    };
-  }
+  if (!(formData instanceof FormData)) return { message: "Invalid form data." };
 
   try {
-    await signIn("credentials", formData);
+    // This throws a Redirect on success to /app
+    await signIn("credentials", formData, { redirectTo: "/app" });
+    return; // (unreached on success)
   } catch (error) {
     if (error instanceof AuthError) {
       switch (error.type) {
-        case "CredentialsSignin": {
-          return {
-            message: "Invalid credentials.",
-          };
-        }
-        default: {
-          return {
-            message: "Error. Could not sign in.",
-          };
-        }
+        case "CredentialsSignin":
+          return { message: "Invalid credentials." };
+        default:
+          return { message: "Error. Could not sign in." };
       }
     }
-
-    throw error; // nextjs redirects throws error, so we need to rethrow it
+    throw error; // keep rethrowing non-AuthError (e.g., the redirect Response)
   }
-  await signOut({ redirectTo: "/app" });
 }
 
 export async function signUp(prevState: unknown, formData: unknown) {
