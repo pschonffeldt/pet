@@ -1,4 +1,3 @@
-// lib/auth-edge.ts
 import { NextAuthConfig } from "next-auth";
 import prisma from "./db";
 
@@ -8,13 +7,12 @@ export const nextAuthEdgeConfig = {
   },
   callbacks: {
     authorized: ({ auth, request }) => {
-      // runs on every request via middleware
+      // runs on every request with middleware
       const isLoggedIn = Boolean(auth?.user);
-      const path = request.nextUrl.pathname;
-      const isTryingToAccessApp = path.startsWith("/app");
+      const isTryingToAccessApp = request.nextUrl.pathname.includes("/app");
 
       if (!isLoggedIn && isTryingToAccessApp) {
-        return false; // sends to /login
+        return false;
       }
 
       if (isLoggedIn && isTryingToAccessApp && !auth?.user.hasAccess) {
@@ -27,16 +25,21 @@ export const nextAuthEdgeConfig = {
 
       if (
         isLoggedIn &&
-        (path.startsWith("/login") || path.startsWith("/signup")) &&
+        (request.nextUrl.pathname.includes("/login") ||
+          request.nextUrl.pathname.includes("/signup")) &&
         auth?.user.hasAccess
       ) {
         return Response.redirect(new URL("/app/dashboard", request.nextUrl));
       }
 
       if (isLoggedIn && !isTryingToAccessApp && !auth?.user.hasAccess) {
-        if (path.startsWith("/login") || path.startsWith("/signup")) {
+        if (
+          request.nextUrl.pathname.includes("/login") ||
+          request.nextUrl.pathname.includes("/signup")
+        ) {
           return Response.redirect(new URL("/payment", request.nextUrl));
         }
+
         return true;
       }
 
@@ -46,27 +49,32 @@ export const nextAuthEdgeConfig = {
 
       return false;
     },
-
     jwt: async ({ token, user, trigger }) => {
       if (user) {
-        token.userId = user.id!;
+        // on sign in
+        token.userId = user.id;
         token.email = user.email!;
-        token.hasAccess = (user as any).hasAccess;
+        token.hasAccess = user.hasAccess;
       }
 
       if (trigger === "update") {
+        // on every request
         const userFromDb = await prisma.user.findUnique({
-          where: { email: token.email as string },
+          where: {
+            email: token.email,
+          },
         });
-        if (userFromDb) token.hasAccess = userFromDb.hasAccess;
+        if (userFromDb) {
+          token.hasAccess = userFromDb.hasAccess;
+        }
       }
 
       return token;
     },
-
     session: ({ session, token }) => {
-      session.user.id = token.userId as string;
-      session.user.hasAccess = token.hasAccess as boolean;
+      session.user.id = token.userId;
+      session.user.hasAccess = token.hasAccess;
+
       return session;
     },
   },

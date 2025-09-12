@@ -1,106 +1,96 @@
 "use server";
 
-import { signIn, signOut } from "@/lib/auth-no-edge";
+import { auth, signIn, signOut } from "@/lib/auth-no-edge";
 import prisma from "@/lib/db";
+import { sleep } from "@/lib/utils";
 import { authSchema, petFormSchema, petIdSchema } from "@/lib/validations";
-import { Prisma } from "@prisma/client";
+import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
-import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
 import { checkAuth, getPetById } from "@/lib/server-utils";
-import { revalidatePath } from "next/cache";
-import Stripe from "stripe";
+import { Prisma } from "@prisma/client";
+import { AuthError } from "next-auth";
 
-// Instantiate Stripe (do NOT pass apiVersion to avoid TS mismatch)
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-
-// Simple base URL helper (replaces any old getBaseUrl usage)
-const BASE_URL =
-  process.env.CANONICAL_URL ??
-  (process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "http://localhost:3000");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 // --- user actions ---
 
-export async function logOut() {
-  await signOut({ redirectTo: "/" });
-}
-
-export async function logIn(_prev: unknown, formData: unknown) {
-  if (!(formData instanceof FormData)) return { message: "Invalid form data." };
-
-  const entries = Object.fromEntries(formData.entries());
-  const parsed = authSchema.safeParse(entries);
-  if (!parsed.success) return { message: "Invalid form data." };
-
-  // where should this user land?
-  const user = await prisma.user.findUnique({
-    where: { email: parsed.data.email },
-    select: { hasAccess: true },
-  });
-  const dest = user?.hasAccess ? "/app/dashboard" : "/payment";
-
-  try {
-    // create session but DON'T redirect
-    await signIn("credentials", formData, { redirect: false } as any);
-  } catch (err) {
-    if (err instanceof AuthError && err.type === "CredentialsSignin") {
-      return { message: "Invalid credentials." };
-    }
-    throw err;
-  }
-
-  // YOU redirect
-  redirect(dest);
-}
-
-export async function signUp(_prev: unknown, formData: unknown) {
-  if (!(formData instanceof FormData)) return { message: "Invalid form data." };
-
-  // Validate input
-  const entries = Object.fromEntries(formData.entries());
-  const parsed = authSchema.safeParse(entries);
-  if (!parsed.success) return { message: "Invalid form data." };
-
-  const { email, password } = parsed.data;
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  // Create user
-  try {
-    await prisma.user.create({ data: { email, hashedPassword } });
-  } catch (err: unknown) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError) {
-      if (err.code === "P2002") return { message: "Email already exists." };
-      return { message: `Could not create user (Prisma ${err.code}).` };
-    }
+export async function logIn(prevState: unknown, formData: unknown) {
+  if (!(formData instanceof FormData)) {
     return {
-      message: `Could not create user: ${
-        (err as Error)?.message ?? "Unknown error"
-      }`,
+      message: "Invalid form data.",
     };
   }
 
-  // Immediately sign the user in and let NextAuth redirect to /payment.
   try {
-    const creds = new FormData();
-    creds.set("email", email);
-    creds.set("password", password);
-
-    // NextAuth will throw a NEXT_REDIRECT on success, so this call won't return.
-    await signIn("credentials", creds, { redirectTo: "/payment" } as any);
-
-    // Fallback (shouldn't be reached if redirect happens)
-    return { message: "Signed up. Redirecting…" };
-  } catch (err) {
-    if (err instanceof AuthError) {
-      // e.g. CredentialsSignin
-      console.error("SIGNUP: signIn after create failed:", err);
-      return { message: "Error. Could not sign in after sign up." };
+    await signIn("credentials", formData);
+  } catch (error) {
+    if (error instanceof AuthError) {
+      switch (error.type) {
+        case "CredentialsSignin": {
+          return {
+            message: "Invalid credentials.",
+          };
+        }
+        default: {
+          return {
+            message: "Error. Could not sign in.",
+          };
+        }
+      }
     }
-    // Preserve non-auth errors (e.g., the redirect signal)
-    throw err;
+
+    throw error; // nextjs redirects throws error, so we need to rethrow it
   }
+}
+
+export async function signUp(prevState: unknown, formData: unknown) {
+  // check if formData is a FormData type
+  if (!(formData instanceof FormData)) {
+    return {
+      message: "Invalid form data.",
+    };
+  }
+
+  // convert formData to a plain object
+  const formDataEntries = Object.fromEntries(formData.entries());
+
+  // validation
+  const validatedFormData = authSchema.safeParse(formDataEntries);
+  if (!validatedFormData.success) {
+    return {
+      message: "Invalid form data.",
+    };
+  }
+
+  const { email, password } = validatedFormData.data;
+  const hashedPassword = await bcrypt.hash(password, 10);
+  try {
+    await prisma.user.create({
+      data: {
+        email,
+        hashedPassword,
+      },
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2002") {
+        return {
+          message: "Email already exists.",
+        };
+      }
+    }
+
+    return {
+      message: "Could not create user.",
+    };
+  }
+
+  await signIn("credentials", formData);
+}
+
+export async function logOut() {
+  await signOut({ redirectTo: "/" });
 }
 
 // --- pet actions ---
@@ -110,67 +100,112 @@ export async function addPet(pet: unknown) {
 
   const validatedPet = petFormSchema.safeParse(pet);
   if (!validatedPet.success) {
-    return { message: "Invalid kid data." };
+    return {
+      message: "Invalid pet data.",
+    };
   }
 
   try {
     await prisma.pet.create({
       data: {
         ...validatedPet.data,
-        user: { connect: { id: session.user.id } },
+        user: {
+          connect: {
+            id: session.user.id,
+          },
+        },
       },
     });
   } catch (error) {
-    console.error(error);
-    return { message: "Could not add kid." };
+    console.log(error);
+    return {
+      message: "Could not add pet.",
+    };
   }
 
   revalidatePath("/app", "layout");
 }
 
 export async function editPet(petId: unknown, newPetData: unknown) {
+  // authentication check
   const session = await checkAuth();
 
+  // validation
   const validatedPetId = petIdSchema.safeParse(petId);
   const validatedPet = petFormSchema.safeParse(newPetData);
 
   if (!validatedPetId.success || !validatedPet.success) {
-    return { message: "Invalid kid data." };
+    return {
+      message: "Invalid pet data.",
+    };
   }
 
-  // Authorization
+  // authorization check
   const pet = await getPetById(validatedPetId.data);
-  if (!pet) return { message: "Kid not found." };
-  if (pet.userId !== session.user.id) return { message: "Not authorized." };
+  if (!pet) {
+    return {
+      message: "Pet not found.",
+    };
+  }
+  if (pet.userId !== session.user.id) {
+    return {
+      message: "Not authorized.",
+    };
+  }
 
+  // database mutation
   try {
     await prisma.pet.update({
-      where: { id: validatedPetId.data },
+      where: {
+        id: validatedPetId.data,
+      },
       data: validatedPet.data,
     });
-  } catch {
-    return { message: "Could not edit kid." };
+  } catch (error) {
+    return {
+      message: "Could not edit pet.",
+    };
   }
 
   revalidatePath("/app", "layout");
 }
 
 export async function deletePet(petId: unknown) {
+  // authentication check
   const session = await checkAuth();
 
+  // validation
   const validatedPetId = petIdSchema.safeParse(petId);
   if (!validatedPetId.success) {
-    return { message: "Invalid kid data." };
+    return {
+      message: "Invalid pet data.",
+    };
   }
 
+  // authorization check
   const pet = await getPetById(validatedPetId.data);
-  if (!pet) return { message: "Kid not found." };
-  if (pet.userId !== session.user.id) return { message: "Not authorized." };
+  if (!pet) {
+    return {
+      message: "Pet not found.",
+    };
+  }
+  if (pet.userId !== session.user.id) {
+    return {
+      message: "Not authorized.",
+    };
+  }
 
+  // database mutation
   try {
-    await prisma.pet.delete({ where: { id: validatedPetId.data } });
-  } catch {
-    return { message: "Could not delete kid..." };
+    await prisma.pet.delete({
+      where: {
+        id: validatedPetId.data,
+      },
+    });
+  } catch (error) {
+    return {
+      message: "Could not delete pet.",
+    };
   }
 
   revalidatePath("/app", "layout");
@@ -179,22 +214,25 @@ export async function deletePet(petId: unknown) {
 // --- payment actions ---
 
 export async function createCheckoutSession() {
+  // authentication check
   const session = await checkAuth();
 
+  console.log(session.user.email);
+
+  // create checkout session
   const checkoutSession = await stripe.checkout.sessions.create({
     customer_email: session.user.email,
     line_items: [
       {
-        // keep your existing price ID
-        price: "price_1S3fq1BUzkE5WYavwfF4hGQs",
+        price: "price_1OfpJ7FIW685mC8GCahpbCed",
         quantity: 1,
       },
     ],
     mode: "payment",
-    success_url: `${BASE_URL}/payment?success=true`,
-    cancel_url: `${BASE_URL}/payment?cancelled=true`,
+    success_url: `${process.env.CANONICAL_URL}/payment?success=true`,
+    cancel_url: `${process.env.CANONICAL_URL}/payment?cancelled=true`,
   });
 
-  // Redirect the user to Stripe Checkout
-  redirect(checkoutSession.url!);
+  // redirect user
+  redirect(checkoutSession.url);
 }
