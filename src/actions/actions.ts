@@ -19,22 +19,25 @@ export async function logIn(_prev: unknown, formData: unknown) {
     return { message: "Invalid form data." };
   }
 
-  const email = String(formData.get("email") ?? "");
-  const password = String(formData.get("password") ?? "");
+  const email = formData.get("email");
+  const password = formData.get("password");
 
-  if (!email || !password) {
+  if (
+    typeof email !== "string" ||
+    typeof password !== "string" ||
+    !email ||
+    !password
+  ) {
     return { message: "Please enter email and password." };
   }
 
   try {
-    // Auth.js v5: 3rd arg are query params. On success, this throws a Redirect.
+    // v5: 3rd arg = query params; success throws a Redirect
     await signIn("credentials", { email, password }, { callbackUrl: "/app" });
-    return; // unreachable if sign-in succeeds (redirect is thrown)
+    return; // unreachable on success
   } catch (err: any) {
-    // IMPORTANT: allow the Next.js redirect to pass through
+    // IMPORTANT: let redirects pass through
     if (err?.digest === "NEXT_REDIRECT") throw err;
-
-    // Anything else means credentials failed or another sign-in error
     return { message: "Invalid credentials or sign-in error." };
   }
 }
