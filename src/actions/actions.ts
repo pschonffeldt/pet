@@ -41,6 +41,7 @@ export async function logIn(prevState: unknown, formData: unknown) {
 
     throw error; // nextjs redirects throws error, so we need to rethrow it
   }
+  await signOut({ redirectTo: "/app" });
 }
 
 export async function signUp(prevState: unknown, formData: unknown) {
