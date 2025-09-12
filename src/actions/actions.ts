@@ -27,12 +27,14 @@ export async function logIn(_prev: unknown, formData: unknown) {
   }
 
   try {
-    // v5: 3rd arg are query params; this will throw a Redirect on success
+    // Auth.js v5: 3rd arg are query params. On success, this throws a Redirect.
     await signIn("credentials", { email, password }, { callbackUrl: "/app" });
-    return; // unreachable on success
+    return; // unreachable if sign-in succeeds (redirect is thrown)
   } catch (err: any) {
-    // while debugging, surface the real reason:
-    console.error("signIn error:", err);
+    // IMPORTANT: allow the Next.js redirect to pass through
+    if (err?.digest === "NEXT_REDIRECT") throw err;
+
+    // Anything else means credentials failed or another sign-in error
     return { message: "Invalid credentials or sign-in error." };
   }
 }
