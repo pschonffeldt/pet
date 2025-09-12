@@ -5,36 +5,26 @@ import prisma from "@/lib/db";
 import { authSchema, petFormSchema, petIdSchema } from "@/lib/validations";
 import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
-import { redirect } from "next/navigation";
 import { checkAuth, getPetById } from "@/lib/server-utils";
 import { Prisma } from "@prisma/client";
+
+import { redirect } from "next/navigation";
 
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 // --- user actions ---
 
-export async function logIn(prevState: unknown, formData: unknown) {
+export async function logIn(_prev: unknown, formData: unknown) {
   if (!(formData instanceof FormData)) {
     return { message: "Invalid form data." };
   }
 
-  // Ensure your form names match your credentials provider (e.g. email/password)
-  // formData.get("email"), formData.get("password"), etc.
-
   try {
-    // prevent NextAuth from throwing a redirect; let us inspect the result
-    const res = await signIn("credentials", formData, { redirect: false });
-
-    // NextAuth returns `{ error?: string, status: number, ok: boolean, url?: string }`
-    if ((res as any)?.error) {
-      return { message: "Invalid credentials." }; // or map error string if you prefer
-    }
-
-    // success -> redirect wherever you want
-    redirect("/app");
-  } catch (err) {
-    // network/unknown error
-    return { message: "Error. Could not sign in." };
+    // Auth.js v5: 3rd arg is query params; this triggers a Redirect to /app on success
+    await signIn("credentials", formData, { callbackUrl: "/app" });
+    return; // unreachable on success (redirect thrown)
+  } catch {
+    return { message: "Invalid credentials or sign-in error." };
   }
 }
 
