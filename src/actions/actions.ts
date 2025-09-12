@@ -8,29 +8,33 @@ import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 import { checkAuth, getPetById } from "@/lib/server-utils";
 import { Prisma } from "@prisma/client";
-import { AuthError } from "next-auth";
 
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 // --- user actions ---
 
 export async function logIn(prevState: unknown, formData: unknown) {
-  if (!(formData instanceof FormData)) return { message: "Invalid form data." };
+  if (!(formData instanceof FormData)) {
+    return { message: "Invalid form data." };
+  }
+
+  // Ensure your form names match your credentials provider (e.g. email/password)
+  // formData.get("email"), formData.get("password"), etc.
 
   try {
-    // This throws a Redirect on success to /app
-    await signIn("credentials", formData, { redirectTo: "/app" });
-    return; // (unreached on success)
-  } catch (error) {
-    if (error instanceof AuthError) {
-      switch (error.type) {
-        case "CredentialsSignin":
-          return { message: "Invalid credentials." };
-        default:
-          return { message: "Error. Could not sign in." };
-      }
+    // prevent NextAuth from throwing a redirect; let us inspect the result
+    const res = await signIn("credentials", formData, { redirect: false });
+
+    // NextAuth returns `{ error?: string, status: number, ok: boolean, url?: string }`
+    if ((res as any)?.error) {
+      return { message: "Invalid credentials." }; // or map error string if you prefer
     }
-    throw error; // keep rethrowing non-AuthError (e.g., the redirect Response)
+
+    // success -> redirect wherever you want
+    redirect("/app");
+  } catch (err) {
+    // network/unknown error
+    return { message: "Error. Could not sign in." };
   }
 }
 
